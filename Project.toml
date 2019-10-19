@@ -1,8 +1,6 @@
-
-
-desc = "These integer types check for overflow and underflow, otherwise they work like system integers." 
-keywords = ["integer", "overflow", "underflow", "checked-arithmetic"]
 name = "PatternDispatch"
+desc = "Provide dispatch based on pattern matching" 
+keywords = ["pattern", "dispatch"]
 uuid = "813bddf1-00c7-56ca-9808-173afa1f34f5"
 repo = "https://github.com/JeffreySarnoff/PatternDispatch.jl.git"
 author = "Toivo Henningsson"
