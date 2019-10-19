@@ -1,0 +1,23 @@
+
+
+desc = "These integer types check for overflow and underflow, otherwise they work like system integers." 
+keywords = ["integer", "overflow", "underflow", "checked-arithmetic"]
+name = "PatternDispatch"
+uuid = "813bddf1-00c7-56ca-9808-173afa1f34f5"
+repo = "https://github.com/JeffreySarnoff/PatternDispatch.jl.git"
+author = "Toivoh"
+license = "MIT"
+version = "v0.2.0"
+
+[deps]
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+
+[compat]
+MacroTools = "0"
+julia = "1"
