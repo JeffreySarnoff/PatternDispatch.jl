@@ -1,4 +1,5 @@
 module PatternDispatch
+
 export @pattern, show_dispatch
 
 include("Meta.jl")

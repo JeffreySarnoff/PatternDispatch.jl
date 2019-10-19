@@ -1,5 +1,5 @@
-
 module Patterns
+
 import Base.&, Base.isequal, Base.>=, Base.>, Base.<=, Base.<, Base.==
 using ..Intern
 
@@ -9,33 +9,33 @@ export Intension, intension, naught, anything
 export encode, predsof, depsof, subs, resultof
 export Pattern, suffix_bindings
 
-
 # ---- Node -------------------------------------------------------------------
 
-abstract Node{T}
-typealias Predicate Node{Bool}
+abstract type Node{T} end
+const Predicate = Node{Bool}
 
-@interned type Atom{T} <: Node{T}
+@interned mutable struct Atom{T} <: Node{T}
     value::T
+    function Atom(value::T) where {T}
+        return new{T}(value)
+    end
 end
-Atom{T}(value::T) = Atom{T}(value)
 
-depsof(node::Atom) = []
+depsof(node::Atom{T}) where {T} = []
 
 const never  = Atom(false)
 const always = Atom(true)
 
-@interned type Guard <: Node{Union{}}
+@interned mutable struct Guard <: Node{Union{}}
     pred::Predicate
 end
 subs(d::Dict, node::Guard) = Guard(d[node.pred])
 
 resultof(node::Node) = error("Undefined!")
 
-
 # ---- Intension --------------------------------------------------------------
-       
-type Intension
+
+struct Intension
     factors::Dict{Node,Predicate}
 end
 
@@ -71,11 +71,9 @@ isequal(x::Intension, y::Intension) = isequal(x.factors, y.factors)
 <=(x::Intension, y::Intension) = y >= x
 <( x::Intension, y::Intension) = y >  x
 
-
-
 # ---- Pattern ----------------------------------------------------------------
 
-type Pattern
+struct Pattern
     intent::Intension
     bindings::Dict{Symbol,Node}
     rev_bindings::Dict{Node,Symbol}

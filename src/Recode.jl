@@ -1,6 +1,6 @@
-
 # Recode: function signature -> Pattern creating AST
 module Recode
+
 using ..Meta, ..Patterns, ..Nodes
 export recode, @qpat, @ipat
 export refnode, egalpred, typepred, lengthnode
@@ -17,7 +17,7 @@ macro ipat(ex)
     end
 end
 
-type Context
+mutable struct Context
     code::Vector
     preds::Vector
     bindings::Vector
@@ -29,10 +29,10 @@ function recode(ex)
     recode(c, quot(argnode), ex)
     p_ex = quote
         $(c.code...)
-        Pattern(intension($(c.preds...)), 
+        Pattern(intension($(c.preds...)),
                 $(Expr(:typed_dict, :(Symbol=>Node), c.bindings...)))
     end
-    syms = Symbol[b.args[1].args[1] for b in c.bindings] 
+    syms = Symbol[b.args[1].args[1] for b in c.bindings]
     if length(syms) != length(Set(syms))
         error("@pattern: Non-tree patterns not yet implemented. Use unique argument names.")
     end

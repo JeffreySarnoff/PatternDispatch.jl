@@ -1,20 +1,20 @@
 
 module Encode
+
 using ..Meta, ..Patterns, ..Dispatch
 import ..Nodes
 import ..Patterns.resultof, ..Nodes.encode
 
 export code_dispatch, seq_dispatch!
 
-
 # ---- Result: Node type for instantiated results -----------------------------
 
-type Result{T} <: Node{T}
+mutable struct Result{T} <: Node{T}
     node::Node{T}
     name::Union{Symbol,Void}
     nrefs::Int
     ex
-    
+
     Result(node::Node{T}, name) = new(node, name, 1, nothing)
 end
 Result{T}(node::Node{T}, name) = Result{T}(node, name)
@@ -22,11 +22,11 @@ Result(node::Node)             = Result(node, nothing)
 
 resultof(node::Result) = (@assert node.ex != nothing; node.ex)
 
-
 # ---- sequence!: Create evaluation order, instantiate nodes into Result's ----
 
-typealias ResultsDict Dict{Node,Node}
-type Sequence
+const ResultsDict = Dict{Node,Node}
+
+mutable struct Sequence
     intent::Intension
     results::ResultsDict
     namer::Function
@@ -77,12 +77,12 @@ function seq_dispatch!(d::DNode, methods, hullT::Tuple)
             end
         end
         if name === nothing;  name = symbol("arg$k");  end
-        
+
         push!(argsyms, name)
         provide!(results, node, name)
     end
 
-    seq_dispatch!(results, d)    
+    seq_dispatch!(results, d)
     argsyms
 end
 

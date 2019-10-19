@@ -1,5 +1,5 @@
-
 module Dispatch
+
 using ..PartialOrder
 using ..PartialOrder: Node, insert!
 
@@ -25,14 +25,14 @@ methodsof{M}(top::Node{M}) = [node.value for node in subDAGof(top)]
 
 function addmethod!{M}(top::Node{M}, name::Symbol, m::M)
     insert!(top, Node(m))
-    
+
     methods = methodsof(top)
     for mk in methods
         if mk === m;  continue  end
         lb = domainof(m) & domainof(mk)
         if is_empty_domain(lb); continue; end
         if any([domainof(ml) == lb for ml in methods]) continue; end
-        
+
         sig1 = signatureof(m,  "_A")
         sig2 = signatureof(mk, "_B")
 
@@ -68,12 +68,11 @@ function simplify!{T}(subs::Dict{Node{T},Node{T}}, node::Node{T}, domain)
     subs[node] = node
 end
 
-
 # ---- Decision Tree ----------------------------------------------------------
 
-abstract DNode{M}
+abstract type DNode{M} end
 
-type Decision{M} <: DNode{M}
+mutable struct Decision{M} <: DNode{M}
     domain
     pass::DNode
     fail::DNode
@@ -85,7 +84,7 @@ type Decision{M} <: DNode{M}
 end
 Decision{M}(dom, pass, fail, ms::Vector{M}) = Decision{M}(dom, pass, fail, ms)
 
-type MethodCall{M} <: DNode{M}
+mutable struct MethodCall{M} <: DNode{M}
     m::M
     bind_seq::Vector
     bindings::Vector{INode}
@@ -94,7 +93,7 @@ type MethodCall{M} <: DNode{M}
 end
 MethodCall{M}(m::M) = MethodCall{M}(m)
 
-type NoMethodNode <: DNode; end
+struct NoMethodNode <: DNode; end
 const nomethodnode = NoMethodNode()
 
 
@@ -120,16 +119,16 @@ build_dtree(top::Node) = build_dtree(top, subDAGof(top))
 function build_dtree{M}(top::Node{M}, ms::Set{Node{M}})
     if isempty(top.gt) || length(ms) == 1
         top.value.body === nothing ? nomethodnode : MethodCall(top.value)
-    else        
+    else
         pivot = choose_pivot(top, ms)
         below = subDAGof(pivot)
         pass = build_dtree(pivot, intersect(ms, below))
         fail = build_dtree(top,   setdiff(ms, below))
 
-        methods = M[node.value for node in filter(node->(node in ms), 
+        methods = M[node.value for node in filter(node->(node in ms),
                                                   ordered_subDAGof(top))]
         Decision(domainof(pivot.value), pass, fail, methods)
-    end    
+    end
 end
 
 end # module

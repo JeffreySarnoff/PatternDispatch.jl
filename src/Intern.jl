@@ -1,5 +1,5 @@
-
 module Intern
+
 using ..Meta
 export @interned, @get!  # shouldn't need to export @get!
 
@@ -20,8 +20,8 @@ macro interned(ex)
     code_interned(ex)
 end
 function code_interned(ex)
-    @expect is_expr(ex, :type, 3)
-    imm, typesig, typebody = ex.args    
+    @expect is_expr(ex, :struct, 3)
+    imm, typesig, typebody = ex.args
     typeex = (is_expr(typesig, :(<:), 2) ? typesig.args[1] : typesig)
     typename =   (is_expr(typeex, :curly) ? typeex.args[1] : typeex)::Symbol
     typeparams = (is_expr(typeex, :curly) ? typeex.args[2:end] : [])
@@ -35,7 +35,7 @@ function code_interned(ex)
             push!(sigs, def)
         elseif is_expr(def, :(::), 2)
             push!(fields, def.args[1])
-            push!(types,  def.args[2])            
+            push!(types,  def.args[2])
             push!(sigs, def)
         elseif is_fdef(def)
             sig, body = split_fdef(def)
@@ -45,16 +45,16 @@ function code_interned(ex)
                 def = :($sig=$body)
             end
         end
-        push!(defs, def)    
+        push!(defs, def)
     end
-    
-    objects = ObjectIdDict()
-    push!(defs, :($new_interned{$(typeparams...)}($(sigs...)) = 
+
+    objects = IdDict()
+    push!(defs, :($new_interned{$(typeparams...)}($(sigs...)) =
                   @get!($(quot(objects)),($(fields...),), new{$(typeparams...)}($(fields...))) ))
     if needs_default_constructor
         push!(defs, :( $typename($(sigs...)) = $new_interned($(fields...)) ))
     end
-    esc(Expr(:type, imm, typesig, Expr(:block, defs...)))
+    esc(Expr(:struct, imm, typesig, Expr(:block, defs...)))
 end
-
+=#
 end

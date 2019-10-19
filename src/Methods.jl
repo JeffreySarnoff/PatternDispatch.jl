@@ -1,5 +1,5 @@
-
 module Methods
+
 import Base.push!, Base.>=, Base.&
 import ..Dispatch.domainof, ..Dispatch.signatureof, ..Dispatch.make_namer
 import ..Dispatch.is_empty_domain, ..Dispatch.hullof
@@ -8,10 +8,9 @@ using ..Meta, ..PartialOrder, ..Patterns, ..Dispatch, ..Encode, ..Recode
 
 export @pattern, show_dispatch
 
-
 # ---- Method -----------------------------------------------------------------
 
-type Method
+mutable struct Method
     sig::Pattern
     bindings::Vector{Node}
     body::Union{Function,Void}
@@ -36,7 +35,7 @@ signatureof(m::Method)         = m.sig
 signatureof(m::Method, suffix) = suffix_bindings(m.sig, suffix)
 
 function make_namer(methods::Vector{Method})
-    (node::Node)->begin        
+    (node::Node)->begin
         for method in methods
             rb = method.sig.rev_bindings
             if haskey(rb, node)
@@ -47,24 +46,22 @@ function make_namer(methods::Vector{Method})
     end
 end
 
-
 is_empty_domain(domain::Intension) = (domain === naught)
-
 
 # ---- MethodTable ------------------------------------------------------------
 
-typealias MethodNode PartialOrder.Node{Method}
+const MethodNode(Method) = PartialOrder.Node{Method}
 
-type MethodTable
+mutable struct MethodTable
     name::Symbol
-    top::MethodNode
+    top::MethodNode{Method}
 
     compiled::Bool
     julia_methods::Dict{Tuple,Any}
     method_counter::Int
     f::Function
 
-    function MethodTable(name::Symbol) 
+    function MethodTable(name::Symbol)
         mt = new(name, MethodNode(nomethod), false, Dict{Tuple,Any}(), 0)
         mt.f = eval(:(let
                 function $name(args...)
@@ -101,7 +98,7 @@ function compile!(mt::MethodTable)
 #    hullTs = Tuple[m.hullT for m in filter(m->(m != nomethod), methods)]
     # Each element is a Tuple, but how to express that to the comprehension?
     hullTs = [m.hullT for m in filter(m->(m != nomethod), methods)]
-    
+
     compiled = Set{Tuple}()
     for hullT in reverse(hullTs)
         if hullT in compiled; continue end
@@ -114,7 +111,7 @@ function compile!(mt::MethodTable, methods::Vector{Method}, hullT::Tuple)
     hull  = intension(hullT)
     top   = simplify(mt.top, hull)
     dtree = build_dtree(top)
-    
+
     argsyms = seq_dispatch!(dtree, methods, hullT)
     code    = code_dispatch(dtree)
 
@@ -128,10 +125,10 @@ function compile!(mt::MethodTable, methods::Vector{Method}, hullT::Tuple)
         end))
 end
 
-show_dispatch(mt::MethodTable, args...) = show_dispatch(STDOUT, 
+show_dispatch(mt::MethodTable, args...) = show_dispatch(STDOUT,
                                                         mt, args...)
 show_dispatch(io::IO, mt::MethodTable) = show_dispatch(io, mt, nothing)
-function show_dispatch(io::IO, mt::MethodTable, Ts::Union{Tuple,Void}) 
+function show_dispatch(io::IO, mt::MethodTable, Ts::Union{Tuple,Void})
     if !mt.compiled;  compile!(mt)  end
 
     println("const ", mt.name, " = (args...)->dispatch(args...)")
@@ -147,7 +144,7 @@ function show_dispatch(io::IO, mt::MethodTable, Ts::Union{Tuple,Void})
         mnames[method.body] = mname
 
         args = keys(method.sig.bindings) # Right order? Does it matter?
-        Base.show_unquoted(io, Expr(:function, :($mname($(args...))), 
+        Base.show_unquoted(io, Expr(:function, :($mname($(args...))),
                                     method.body_ex))
         print(io,"\n\n")
     end
@@ -193,9 +190,9 @@ function code_pattern(ex)
     end
     psig = :($(args...),)
     p_ex, bodyargs = recode(psig)
-    
+
     f = esc(fname::Symbol)
-    quote       
+    quote
         local p = $p_ex
         local bindings = Node[p.bindings[name] for name in $(quot(bodyargs))]
         local bodyfun = $(esc(:(($(bodyargs...),)->$body)))

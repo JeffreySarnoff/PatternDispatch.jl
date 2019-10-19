@@ -6,17 +6,16 @@ using ..Meta, ..Intern, ..Patterns
 export argsym, argnode, refnode, lengthnode, egalpred, typepred
 export julia_signature_of
 
-
 # ---- nodes ------------------------------------------------------------------
 
-type Arg <: Node{Any}; end
+struct Arg <: Node{Any}; end
 const argnode = Arg()
 const argsym  = gensym("arg")
 
-@interned type Ref    <: Node{Any};  arg::Node; index::Int;  end
-@interned type Length <: Node{Any};  arg::Node;              end
-@interned type Egal   <: Predicate;  arg::Node; eq::Node;    end
-@interned type Isa    <: Predicate;  arg::Node; typ;         end
+@interned mutable struct Ref    <: Node{Any};  arg::Node; index::Int;  end
+@interned mutable struct Length <: Node{Any};  arg::Node;              end
+@interned mutable struct Egal   <: Predicate;  arg::Node; eq::Node;    end
+@interned mutable struct Isa    <: Predicate;  arg::Node; typ;         end
 
 refnode(   arg::Node, index::Int) = Ref(arg, index)
 lengthnode(arg::Node)             = Length(arg)
@@ -91,14 +90,14 @@ julia_signature_of(p::Pattern) = julia_signature_of(p.intent)
 
 function show(io::IO, p::Pattern)
     if p.intent === naught; print(io, "::Union{}"); return; end
-    
+
     users = Dict{Node,Set}()
     for (name,arg) in p.bindings; adduser(users, name, arg); end
     for g in predsof(p.intent);  adduser(users, g);         end
 
     showpat(io, users, argnode)
 end
-    
+
 adduser(users::Dict, u::Node) = for d in depsof(u); adduser(users, u, d); end
 function adduser(users::Dict, user, dep::Node)
     if !haskey(users, dep); adduser(users, dep); users[dep] = Set() end
@@ -131,7 +130,7 @@ function showpat(io::IO, users::Dict, node::Node)
                     continue
                 end
             end
-            print(io, "::", Tof(u)); printed = true            
+            print(io, "::", Tof(u)); printed = true
         elseif isa(u, Length) # todo: do something
         elseif isa(u, Ref)
             print(io, typ <: Vector ? '[' : '(')
